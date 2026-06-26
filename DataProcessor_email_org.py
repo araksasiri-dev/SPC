@@ -18,9 +18,16 @@ class DataProcessor:
         self.duplicate_email = []
         self.duplicate_phone = []
         
-        self.credentials_file = os.getenv("GMAIL_CREDENTIALS", "credentials.json")
-        self.token_file = os.getenv("GMAIL_TOKEN", "token.pickle")
-        self.recipient_email = os.getenv("RECIPIENT_EMAIL", "admin@example.com")
+        # ✅ เปลี่ยนให้อ่านจาก C:\secrets\
+        self.credentials_file = os.getenv("GMAIL_CREDENTIALS", r"C:\secrets\credentials.json")
+        self.token_file = os.getenv("GMAIL_TOKEN", r"C:\secrets\token.pickle")
+        self.recipient_email = os.getenv("RECIPIENT_EMAIL", "ar0816250183@gmail.com")
+        
+        # ✅ ตรวจสอบว่าไฟล์มีอยู่จริง
+        if not os.path.exists(self.credentials_file):
+            print(f"⚠️ ไม่พบไฟล์ credentials.json ที่ {self.credentials_file}")
+        if not os.path.exists(self.token_file):
+            print(f"⚠️ ไม่พบไฟล์ token.pickle ที่ {self.token_file}")
     
     # ========== Utility ==========
     def _safe_str(self, value):
@@ -82,51 +89,49 @@ class DataProcessor:
     
     # ========== Data Validation ==========
     def process_data(self):
-        """ตรวจสอบข้อมูลซ้ำ แยกเป็น 3 ประเภท"""
-        if not self.raw_data:
-            self.read_excel()
-        
-        email_seen = {}
-        phone_seen = {}
-        
-        self.clean_data = []
-        self.duplicate_email = []
-        self.duplicate_phone = []
-        self.duplicate_both = []  # ✅ ใหม่: ซ้ำทั้ง Email และ Phone
-        
-        # ตรวจสอบข้อมูลซ้ำ
-        for user in self.raw_data:
-            email = self._safe_str(user.get("email", ""))
-            phone = self._safe_str(user.get("phone", ""))
-            username = self._safe_str(user.get("username", ""))
+            if not self.raw_data:
+                self.read_excel()
             
-            if not email or not phone:
-                continue
+            email_seen = {}
+            phone_seen = {}
+            self.clean_data = []
+            self.duplicate_email = []
+            self.duplicate_phone = []
             
-            # ตรวจสอบซ้ำ
-            is_dup_email = email in email_seen
-            is_dup_phone = phone in phone_seen
+            for user in self.raw_data:
+                email = self._safe_str(user.get("email", "")).strip()
+                phone = self._safe_str(user.get("phone", "")).strip()
+                
+                # ตรวจสอบกรณีข้อมูลว่าง
+                if not email or not phone:
+                    continue
+                
+                # 🟢 เปลี่ยนตรรกะ: เช็กสถานะแยกขาดจากกัน ไม่ตัดตอนด้วย continue มั่วซั่ว
+                is_email_dup = email in email_seen
+                is_phone_dup = phone in phone_seen
+                
+                if is_email_dup:
+                    self.duplicate_email.append(user)
+                    
+                if is_phone_dup:
+                    self.duplicate_phone.append(user)
+                
+                # 🟢 บันทึกประวัติการพบเจอทันทีเพื่อใช้เช็กในแถวถัดไป
+                if email: email_seen[email] = True
+                if phone: phone_seen[phone] = True
+                
+                # 🟢 ข้อมูลจะถือว่า Clean ก็ต่อเมื่อ "ไม่ซ้ำทั้งอีเมลและเบอร์โทร"
+                if not is_email_dup and not is_phone_dup:
+                    self.clean_data.append(user)
             
-            if is_dup_email and is_dup_phone:
-                # ✅ ซ้ำทั้ง Email และ Phone
-                self.duplicate_both.append(user)
-            elif is_dup_email:
-                self.duplicate_email.append(user)
-            elif is_dup_phone:
-                self.duplicate_phone.append(user)
-            else:
-                self.clean_data.append(user)
+            print(f"✅ ตรวจสอบข้อมูลสำเร็จ: ผ่าน {len(self.clean_data)} รายการ, อีเมลซ้ำ {len(self.duplicate_email)} รายการ, เบอร์โทรซ้ำ {len(self.duplicate_phone)} รายการ")
             
-            email_seen[email] = True
-            phone_seen[phone] = True
-        
-        return {
-            "clean_data": self.clean_data,
-            "duplicate_email": self.duplicate_email,
-            "duplicate_phone": self.duplicate_phone,
-            "duplicate_both": self.duplicate_both   # ✅ ใหม่
-        }
-    
+            return {
+                "clean_data": self.clean_data,
+                "duplicate_email": self.duplicate_email,
+                "duplicate_phone": self.duplicate_phone
+            }
+            
     def get_clean_users(self):
         return self.clean_data
     
@@ -231,7 +236,7 @@ class DataProcessor:
     
     def get_duplicate_report(self):
         """
-        สร้างรายงานข้อมูลซ้ำ พร้อมเลขลำดับและแยกประเภท
+        สร้างรายงานข้อมูลซ้ำ พร้อมเลขลำดับและขึ้นบรรทัดใหม่
         """
         report = ""
         
@@ -242,7 +247,7 @@ class DataProcessor:
         else:
             report += "✅ ไม่มีอีเมลซ้ำ\n"
         
-        report += "\n"
+        report += "\n"  # บรรทัดว่างระหว่างส่วน
         
         if self.duplicate_phone:
             report += "📱 เบอร์โทรซ้ำ ({} ราย):\n".format(len(self.duplicate_phone))
@@ -250,21 +255,6 @@ class DataProcessor:
                 report += "   {}. {} ({})\n".format(idx, user.get('username'), user.get('phone'))
         else:
             report += "✅ ไม่มีเบอร์โทรซ้ำ\n"
-        
-        report += "\n"
-        
-        # ✅ ใหม่: ซ้ำทั้งคู่
-        if self.duplicate_both:
-            report += "⚠️ ซ้ำทั้งอีเมลและเบอร์โทร ({} ราย):\n".format(len(self.duplicate_both))
-            for idx, user in enumerate(self.duplicate_both, start=1):
-                report += "   {}. {} (📧{} | 📱{})\n".format(
-                    idx, 
-                    user.get('username'), 
-                    user.get('email'), 
-                    user.get('phone')
-                )
-        else:
-            report += "✅ ไม่มีข้อมูลซ้ำทั้งคู่\n"
         
         return report
     
@@ -279,93 +269,112 @@ class DataProcessor:
             },
             "database": self.db.get_summary()
         }
+        
  
-    def save_all_results_to_db(self, clean_results, duplicate_email_results, 
-                                duplicate_phone_results, duplicate_both_results):
-        """บันทึกผลลัพธ์ทั้งหมดลง Database (ใช้ Logic เดียวกับ import_csv.py)"""
-        
-        # ✅ ใช้ Excel โดยตรง แทนการใช้ Logic ที่ซับซ้อน
-        from openpyxl import load_workbook
+    def save_all_results_to_db(self, db_results, dup_emails, dup_phones):
         import sqlite3
+        import os
         
-        # 1. อ่านข้อมูลจาก Excel
-        wb = load_workbook(self.excel_path)
-        ws = wb.active
-        rows = list(ws.iter_rows(min_row=2, values_only=True))
+        # ล็อกพิกัดโฟลเดอร์ปลอดภัยในโปรเจกต์ (รองรับ Windows 100%)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(current_dir, "users.db")
         
-        # 2. เชื่อมต่อ Database
-        conn = sqlite3.connect("users.db")
-        cursor = conn.cursor()
-        
-        # 3. ล้างข้อมูลเก่า
-        cursor.execute("DELETE FROM users")
-        
-        # 4. Insert ข้อมูลทั้งหมด
-        success_count = 0
-        skipped_count = 0
-        email_seen = set()
-        phone_seen = set()
-        
-        for row in rows:
-            if not row or not row[0]:
-                continue
+        print(f"\n[SYSTEM-CHECK] โค้ดทำงานแล้ว! ระบบกำลังบันทึกข้อมูลแบบสะสมไปที่: {db_path}")
             
-            username = row[0]
-            email = row[1] if len(row) > 1 else ""
-            phone = row[2] if len(row) > 2 else ""
+        local_conn = sqlite3.connect(db_path)
+        local_cursor = local_conn.cursor()
+        
+        # 🟢 เอา DROP TABLE ออกไปแล้ว! 
+        # 🟢 เปลี่ยนมาใช้ CREATE TABLE IF NOT EXISTS และไม่มีกฎ UNIQUE ค้ำคอ
+        # เพื่อเปิดทางให้ข้อมูลในรอบถัดๆ ไปไหลเข้าต่อท้าย (Append) ได้เรื่อยๆ โดยไม่ทำลายข้อมูลเก่า
+        local_cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT,
+                email TEXT,
+                phone TEXT,
+                status TEXT,
+                registered_at DATETIME DEFAULT (datetime('now', 'localtime')),
+                error_message TEXT
+            )
+        """)
+        
+        # 1. บันทึกกลุ่มที่ผ่านการกรอกหน้าเว็บ 
+        for user in db_results:
+            username = user.get('username', '') if hasattr(user, 'get') else user['username']
+            email = user.get('email', '') if hasattr(user, 'get') else user['email']
+            phone = user.get('phone', '') if hasattr(user, 'get') else user['phone']
+            status = user.get('status', '') if hasattr(user, 'get') else user['status']
             
-            # ✅ ใช้ Logic เดียวกับ import_csv.py
-            if username.startswith('dup_'):
-                status = "SKIPPED (Duplicate)"
-                skipped_count += 1
-            else:
-                status = "SUCCESS"
-                success_count += 1
-            
-            cursor.execute("""
-                INSERT OR REPLACE INTO users 
-                (username, email, phone, status, registered_at)
-                VALUES (?, ?, ?, ?, datetime('now'))
+            local_cursor.execute("""
+                INSERT INTO users (username, email, phone, status) 
+                VALUES (?, ?, ?, ?)
             """, (username, email, phone, status))
-        
-        conn.commit()
-        conn.close()
-        
-        summary = {
-            "total": len(rows),
-            "success": success_count,
-            "failed": 0,
-            "skipped": skipped_count
-        }
-        print(f"✅ บันทึก Database ทั้งหมด: {summary}")
-        return summary
-         
+            
+        # 2. บันทึกกลุ่มอีเมลซ้ำ (บันทึกตรงๆ เพื่อเก็บประวัติ Audit Log)
+        for user in dup_emails:
+            username = user.get('username', '') if hasattr(user, 'get') else user['username']
+            email = user.get('email', '') if hasattr(user, 'get') else user['email']
+            phone = user.get('phone', '') if hasattr(user, 'get') else user['phone']
+            
+            local_cursor.execute("""
+                INSERT INTO users (username, email, phone, status) 
+                VALUES (?, ?, ?, ?)
+            """, (username, email, phone, 'SKIPPED_DUP_EMAIL'))
 
-     
+        # 3. บันทึกกลุ่มเบอร์โทรซ้ำ
+        for user in dup_phones:
+            username = user.get('username', '') if hasattr(user, 'get') else user['username']
+            email = user.get('email', '') if hasattr(user, 'get') else user['email']
+            phone = user.get('phone', '') if hasattr(user, 'get') else user['phone']
+            
+            local_cursor.execute("""
+                INSERT INTO users (username, email, phone, status) 
+                VALUES (?, ?, ?, ?)
+            """, (username, email, phone, 'SKIPPED_DUP_PHONE'))
+            
+        local_conn.commit()
+        local_conn.close()
+        
+        total_inserted = len(db_results) + len(dup_emails) + len(dup_phones)
+        print(f"[SYSTEM-CHECK] 🟢 บันทึกข้อมูลแบบสะสมสำเร็จในรอบนี้: {total_inserted} แถว")
+        return total_inserted
+ 
     def get_full_summary_with_duplicates(self):
-            db_summary = self.db.get_summary()
-            
-            total_clean = len(self.clean_data)
-            total_dup_email = len(self.duplicate_email)
-            total_dup_phone = len(self.duplicate_phone)
-            total_dup_both = len(self.duplicate_both)  # ✅ ต้องมี
-            total_all = len(self.raw_data)
-            
-            success = db_summary.get("success", 0)
-            failed = db_summary.get("failed", 0)
-            skipped = total_dup_email + total_dup_phone + total_dup_both
-            
-            return {
-                "total": total_all,
-                "clean": total_clean,
-                "duplicate_email": total_dup_email,
-                "duplicate_phone": total_dup_phone,
-                "duplicate_both": total_dup_both,  # ✅ ต้องมี
-                "success": success,
-                "failed": failed,
-                "skipped": skipped
-            }    
-            
+        """
+        ดึงสรุปข้อมูลทั้งหมด (รวมข้อมูลซ้ำ) - แก้ไขให้ส่งค่า duplicate_email และ duplicate_phone
+        """
+        # ดึงข้อมูลจาก Database
+        db_summary = self.db.get_summary()
+        
+        # ข้อมูลจาก process_data
+        total_clean = len(self.clean_data)
+        total_dup_email = len(self.duplicate_email)
+        total_dup_phone = len(self.duplicate_phone)
+        total_all = len(self.raw_data)
+        
+        success = db_summary.get("success", 0)
+        failed = db_summary.get("failed", 0)
+        skipped = total_dup_email + total_dup_phone
+        
+        # ตรวจสอบว่า total = success + failed + skipped หรือไม่
+        calculated_total = success + failed + skipped
+        if total_all != calculated_total:
+            print(f"⚠️ ตัวเลขไม่ตรงกัน: total={total_all}, calculated={calculated_total}")
+            # ปรับ total ให้ตรงกับ success + failed + skipped
+            total_all = calculated_total
+        
+        return {
+            "total": total_all,
+            "clean": total_clean,
+            "duplicate_email": total_dup_email,   # ✅ ส่งค่าอีเมลซ้ำ
+            "duplicate_phone": total_dup_phone,   # ✅ ส่งค่าเบอร์โทรซ้ำ
+            "success": success,
+            "failed": failed,
+            "skipped": skipped
+        }
+ 
+
     def get_summary_from_excel(self, excel_path="results_gmail.xlsx"):
         """
         อ่านข้อมูลจากไฟล์ Excel และสรุปผล

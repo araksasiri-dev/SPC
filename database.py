@@ -205,3 +205,34 @@ class DatabaseManager:
         conn.commit()
         conn.close()
         print(f"🗑️ ลบผู้ใช้ {username} เรียบร้อย")
+        
+    # database.py (เพิ่ม method นี้)
+
+    def get_hourly_stats(self, date=None):
+        """
+        ดึงสถิติรายชั่วโมงของวันที่ระบุ
+        
+        Args:
+            date (str): วันที่ในรูปแบบ YYYY-MM-DD (ถ้าไม่ระบุใช้วันนี้)
+        
+        Returns:
+            list: [(hour, total, success, failed), ...]
+        """
+        if date is None:
+            date = datetime.now().strftime('%Y-%m-%d')
+        
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT strftime('%H:00', registered_at) as hour,
+                   COUNT(*) as total,
+                   SUM(CASE WHEN status = 'SUCCESS' THEN 1 ELSE 0 END) as success,
+                   SUM(CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END) as failed
+            FROM users 
+            WHERE DATE(registered_at) = ?
+            GROUP BY strftime('%H:00', registered_at)
+            ORDER BY hour ASC
+        """, (date,))
+        results = cursor.fetchall()
+        conn.close()
+        return results

@@ -33,6 +33,7 @@ ${FAILED_COUNT}     ${0}
     @{CLEAN_USERS}=    Set Variable    ${result["clean_data"]}
     @{DUP_EMAIL_USERS}=    Set Variable    ${result["duplicate_email"]}
     @{DUP_PHONE_USERS}=    Set Variable    ${result["duplicate_phone"]}
+	@{DUP_BOTH_USERS}=    Set Variable    ${result["duplicate_both"]}
     
     # ============================================================
     # 3. รายงานข้อมูลบน Console
@@ -41,6 +42,7 @@ ${FAILED_COUNT}     ${0}
     Log To Console    ✅ ข้อมูลผ่าน: ${CLEAN_USERS.__len__()} ราย
     Log To Console    ⚠️ อีเมลซ้ำ: ${DUP_EMAIL_USERS.__len__()} ราย
     Log To Console    ⚠️ เบอร์โทรซ้ำ: ${DUP_PHONE_USERS.__len__()} ราย
+	Log To Console    ⚠️ อีเมลซ้ำและเบอร์โทรซ้ำ: ${DUP_BOTH_USERS.__len__()} ราย
     
     # ============================================================
     # 4. เปิดเบราว์เซอร์และกรอกฟอร์ม (เฉพาะ clean users) พร้อมดักจับ Exception
@@ -84,7 +86,7 @@ ${FAILED_COUNT}     ${0}
     # ============================================================
     # 5. บันทึก Database (รวมข้อมูลซ้ำ)
     # ============================================================
-    ${db_summary}=    Call Method    ${processor}    save_all_results_to_db    ${DB_RESULTS}    ${DUP_EMAIL_USERS}    ${DUP_PHONE_USERS}
+    ${db_summary}=    Call Method    ${processor}    save_all_results_to_db    ${DB_RESULTS}    ${DUP_EMAIL_USERS}    ${DUP_PHONE_USERS}    ${DUP_BOTH_USERS}
     Log To Console    📊 บันทึก DB สำเร็จ: ${db_summary}
     
     # ============================================================
@@ -101,9 +103,10 @@ ${FAILED_COUNT}     ${0}
     # 🟢 แก้ไขให้ถูกต้อง: ดึงค่าด้วย $ และห้ามใส่เครื่องหมายวงเล็บ [] ครอบเด็ดขาด!
     ${email_dup_count}=   Get Length    ${DUP_EMAIL_USERS}
     ${phone_dup_count}=   Get Length    ${DUP_PHONE_USERS}
+    ${both_dup_count}=   Get Length    ${DUP_BOTH_USERS}	
     
     # นำตัวเลขจำนวนที่นับได้มาบวกกันผ่าน Evaluate
-    ${skipped_total}=    Evaluate    ${email_dup_count} + ${phone_dup_count}
+    ${skipped_total}=    Evaluate    ${email_dup_count} + ${phone_dup_count} + ${both_dup_count}
     
     ${full_summary}=    Create Dictionary
     ...    total=${excel_summary["total"]}
@@ -112,10 +115,12 @@ ${FAILED_COUNT}     ${0}
     ...    skipped=${skipped_total}
     ...    duplicate_email=${email_dup_count}
     ...    duplicate_phone=${phone_dup_count}
+    ...    duplicate_both=${both_dup_count}	
     
     Log To Console    \n📊 สรุปผลทั้งหมด: ${full_summary}
     Log To Console    📧 อีเมลซ้ำ: ${full_summary["duplicate_email"]} ราย
     Log To Console    📱 เบอร์โทรซ้ำ: ${full_summary["duplicate_phone"]} ราย
+	Log To Console    📧📱 อีเมลซ้ำและเบอร์โทรซ้ำ: ${full_summary["duplicate_both"]} ราย
     
     # ============================================================
     # 8. ดึงรายงานข้อมูลซ้ำ

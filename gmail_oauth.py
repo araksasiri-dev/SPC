@@ -98,7 +98,7 @@ class GmailOAuth:
     
     def send_registration_summary(self, recipient_email, summary, user_list, duplicate_report=""):
         """
-        ส่งสรุปผลการสมัครสมาชิก (Plain Text + HTML) - แก้ไขให้ใช้ค่า duplicate_email และ duplicate_phone
+        ส่งสรุปผลการสมัครสมาชิก (Plain Text + HTML) - แก้ไขให้ใช้ค่า duplicate_email และ duplicate_phone และ duplicate_both
         """
         subject = f"📊 สรุปผลการสมัครสมาชิก - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
         
@@ -111,6 +111,7 @@ class GmailOAuth:
         # ✅ ใช้ค่าจาก summary โดยตรง
         dup_email_count = summary.get("duplicate_email", 0)
         dup_phone_count = summary.get("duplicate_phone", 0)
+        dup_both_count = summary.get("duplicate_both", 0)
         
         # ถ้า total_all ยังเป็น 0 ให้คำนวณใหม่
         if total_all == 0:
@@ -128,6 +129,7 @@ class GmailOAuth:
        ⏭️ ถูกข้าม (ซ้ำ): {total_skipped} ราย
           - 📧 อีเมลซ้ำ: {dup_email_count} ราย
           - 📱 เบอร์โทรซ้ำ: {dup_phone_count} ราย
+          - 📧📱 อีเมลซ้ำและเบอร์โทรซ้ำ: {dup_both_count} ราย
 
     {duplicate_report if duplicate_report else '✅ ไม่พบข้อมูลซ้ำ'}
 
@@ -166,6 +168,7 @@ class GmailOAuth:
         total_skipped = summary.get("skipped", 0)
         dup_email_count = summary.get("duplicate_email", 0)
         dup_phone_count = summary.get("duplicate_phone", 0)
+        dup_both_count = summary.get("duplicate_both", 0)
         
         # ✅ ใช้ duplicate_report โดยตรง ไม่ต้องแยก
         dup_display = ""
@@ -205,10 +208,11 @@ class GmailOAuth:
             <p class="total">📋 ข้อมูลทั้งหมด: {total_all} ราย</p>
             <p>✅ <span class="success">สมัครสำเร็จ: {total_success} ราย</span></p>
             <p>❌ <span class="failed">สมัครล้มเหลว: {total_failed} ราย</span></p>
-            <p>⏭️ <span class="skipped">ถูกข้าม (ซ้ำ): {dup_email_count + dup_phone_count} ราย</span></p>
+            <p>⏭️ <span class="skipped">ถูกข้าม (ซ้ำ): {dup_email_count + dup_phone_count + dup_both_count} ราย</span></p>
             <ul style="margin-left: 20px; color: #856404;">
                 <li>📧 อีเมลซ้ำ: <strong>{dup_email_count}</strong> ราย</li>
                 <li>📱 เบอร์โทรซ้ำ: <strong>{dup_phone_count}</strong> ราย</li>
+                <li>📧📱 อีเมลซ้ำและเบอร์โทรซ้ำ: <strong>{dup_both_count}</strong> ราย</li>
             </ul>
         </div>
     """

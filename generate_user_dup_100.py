@@ -24,10 +24,12 @@ def generate_users_with_duplicates(count=90, duplicate_count=10):
     # เพิ่มข้อมูลซ้ำ
     for i in range(duplicate_count):
         dup = random.choice(users)
+        
         dup_user = {
             "username": f"dup_{i+1}_{dup['username']}",
-            "email": dup["email"] if i % 2 == 0 else f"dup_{i+1}@test.com",
-            "phone": dup["phone"] if i % 2 == 1 else f"08{''.join(random.choices(string.digits, k=8))}"
+            # i % 3 == 0 (ซ้ำแค่อีเมล), i % 3 == 1 (ซ้ำแค่เบอร์), i % 3 == 2 (ซ้ำทั้งคู่)
+            "email": dup["email"] if i % 3 in (0, 2) else f"dup_new_{i+1}@test.com",
+            "phone": dup["phone"] if i % 3 in (1, 2) else f"08{''.join(random.choices(string.digits, k=8))}"
         }
         users.append(dup_user)
     
@@ -36,8 +38,8 @@ def generate_users_with_duplicates(count=90, duplicate_count=10):
 if __name__ == "__main__":
     
     # ========== ตั้งค่าตรงนี้! ==========
-    NORMAL_COUNT = 300      # จำนวนข้อมูลปกติ
-    DUPLICATE_COUNT = 20    # จำนวนข้อมูลซ้ำ
+    NORMAL_COUNT = 20      # จำนวนข้อมูลปกติ
+    DUPLICATE_COUNT = 5    # จำนวนข้อมูลซ้ำ
     # ===================================
     users = generate_users_with_duplicates(NORMAL_COUNT, DUPLICATE_COUNT)
       
