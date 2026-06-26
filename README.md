@@ -1,21 +1,21 @@
-🔧 วิธีแก้ไข (ลบออกจาก Git tracking)
-bash
-# 1. ลบไฟล์ Secret ออกจาก Git (แต่เก็บไว้ในเครื่อง)
-git rm --cached credentials.json
-git rm --cached token.pickle
+🛠️ แผนล้างบาง รีเซ็ตโปรเจกต์ให้เบาหวิวใน 4 สเตป
+สเตปที่ 1: กวาดล้างไฟล์ขยะตัวจริง (700 MB ที่เหลือ)
+ให้คุณนพสแกนดูโฟลเดอร์ใน C:\spc เช่น .tmp.driveupload (ถ้ามันยังซ่อนอยู่), โฟลเดอร์ results หรือไฟล์ *.gz แล้วกด Shift + Delete ลบทิ้งออกจากเครื่องไปเลยครับ ให้เหลือแต่ไฟล์โค้ด .py, .robot และ index.html จริงๆ
 
-# 2. ลบโฟลเดอร์ __pycache__ (ถ้ายังมี)
-git rm -r --cached __pycache__
+สเตปที่ 2: ระเบิดความทรงจำ Git ทิ้ง
+กดคลิกที่โฟลเดอร์ .git บนหน้าจอ Windows Explorer ของคุณนพ แล้วกด Shift + Delete ลบทิ้งถาวรได้เลยครับ (หรือใช้คำสั่ง rmdir /s /q .git ใน Terminal ก็ได้ครับ)
 
-# 3. ตรวจสอบสถานะ
-git status
-
-# 4. Commit การเปลี่ยนแปลง
+สเตปที่ 3: เริ่มประวัติศาสตร์ใหม่ที่ใสสะอาด
+กลับมาที่ Terminal พิมพ์คำสั่ง 3 บรรทัดนี้เพื่อสร้างคลังใหม่ที่เบาหวิว (ขนาดจะเหลือไม่กี่ KB) และแพ็กเฉพาะเนื้องานจริงครับ:
+ 
+git init
 git add .
-git commit -m "Remove secrets from Git tracking"
-
-# 5. Push
-git push
+git commit -m "production ready: clean code only"
+สเตปที่ 4: บังคับเซิร์ฟเวอร์ให้ลืมของเก่า (Force Push)
+เชื่อมต่อกับ GitHub แล้วใช้คำสั่ง Force ทุบประวัติบนคลาวด์ให้สะอาดกริ๊บตรงกับในเครื่องคุณนพครับ:
+ 
+git remote add origin  https://github.com/araksasiri-dev/SPC
+git push -f origin master
 
 # SPC - Password Strength Checker
 
