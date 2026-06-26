@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Git Two Machines Checklist</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 40px; }
+        h1 { color: #2c3e50; }
+        h2 { color: #3498db; border-bottom: 2px solid #3498db; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #2c3e50; color: white; }
+        .checkbox { font-family: monospace; }
+        code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+        pre { background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 8px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>📋 Git Two Machines Checklist</h1>
+    
+    <h2>✅ ก่อนเริ่ม: สิ่งที่ต้องเตรียม</h2>
+    <table>
+        <tr><th>#</th><th>รายการ</th><th>สถานะ</th><th>หมายเหตุ</th></tr>
+        <tr><td>1</td><td>ติดตั้ง Git บนเครื่องที่ 2</td><td>☐</td><td><code>winget install Git.Git</code></td></tr>
+        <tr><td>2</td><td>ตั้งชื่อผู้ใช้ (เหมือนเครื่อง 1)</td><td>☐</td><td><code>git config --global user.name "ชื่อคุณ"</code></td></tr>
+        <tr><td>3</td><td>ตั้งอีเมล (เหมือนเครื่อง 1)</td><td>☐</td><td><code>git config --global user.email "email@example.com"</code></td></tr>
+        <tr><td>4</td><td>ตรวจสอบการตั้งค่า</td><td>☐</td><td><code>git config --list</code></td></tr>
+        <tr><td>5</td><td>สร้าง SSH Key (optional)</td><td>☐</td><td><code>ssh-keygen -t ed25519 -C "email@example.com"</code></td></tr>
+        <tr><td>6</td><td>เพิ่ม SSH Key ใน GitHub</td><td>☐</td><td>Settings → SSH and GPG keys</td></tr>
+    </table>
+    
+    <h2>✅ ขั้นตอนการทำงานประจำวัน</h2>
+    <h3>A. ตอนเริ่มงาน</h3>
+    <table>
+        <tr><th>#</th><th>คำสั่ง</th><th>สถานะ</th></tr>
+        <tr><td>1</td><td><code>cd C:\SPC</code></td><td>☐</td></tr>
+        <tr><td>2</td><td><code>git pull</code></td><td>☐</td></tr>
+        <tr><td>3</td><td>เริ่มทำงาน</td><td>☐</td></tr>
+    </table>
+    
+    <h3>B. ตอนเสร็จงาน</h3>
+    <table>
+        <tr><th>#</th><th>คำสั่ง</th><th>สถานะ</th></tr>
+        <tr><td>1</td><td><code>git status</code></td><td>☐</td></tr>
+        <tr><td>2</td><td><code>git add .</code></td><td>☐</td></tr>
+        <tr><td>3</td><td><code>git commit -m "ข้อความ"</code></td><td>☐</td></tr>
+        <tr><td>4</td><td><code>git push</code></td><td>☐</td></tr>
+    </table>
+    
+    <h2>✅ คำสั่งลัดที่ใช้บ่อย</h2>
+    <table>
+        <tr><th>คำสั่ง</th><th>ความหมาย</th></tr>
+        <tr><td><code>git status</code></td><td>ดูสถานะ (ใช้บ่อยสุด)</td></tr>
+        <tr><td><code>git pull</code></td><td>ดึงงานล่าสุด</td></tr>
+        <tr><td><code>git add .</code></td><td>เตรียมส่งทุกไฟล์</td></tr>
+        <tr><td><code>git commit -m "..."</code></td><td>บันทึก</td></tr>
+        <tr><td><code>git push</code></td><td>ส่งขึ้น GitHub</td></tr>
+        <tr><td><code>git log --oneline -5</code></td><td>ดูประวัติ 5 รายการล่าสุด</td></tr>
+    </table>
+    
+    <h2>✅ สูตรสำเร็จ</h2>
+    <pre>
+git pull        # 1. ดึงงานล่าสุด
+git add .       # 2. เตรียมไฟล์
+git commit -m "ทำอะไร"  # 3. บันทึก
+git push        # 4. อัปโหลด
+    </pre>
+    
+    <p><strong>คาถา:</strong> "ก่อนทำอะไร pull ก่อน, เสร็จแล้ว push ทุกที"</p>
+</body>
+</html>

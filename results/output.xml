@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.4.2 (Python 3.14.5 on win32)" generated="2026-06-04T16:42:32.462194" rpa="true" schemaversion="5">
+<suite id="s1" name="Spc" source="C:\spc">
+<suite id="s1-s1" name="Password Checker List" source="C:\spc\password_checker_list.robot">
+<test id="s1-s1-t1" name="ตรวจสอบรหัสผ่านทั้งหมดจากไฟล์ CSV" line="14">
+<kw name="Run Keyword And Return Status" owner="BuiltIn">
+<kw name="File Should Exist">
+<msg time="2026-06-04T16:42:32.530060" level="FAIL">No keyword with name 'File Should Exist' found.</msg>
+<arg>${CSV_FILE}</arg>
+<status status="FAIL" start="2026-06-04T16:42:32.529414" elapsed="0.003570">No keyword with name 'File Should Exist' found.</status>
+</kw>
+<msg time="2026-06-04T16:42:32.534061" level="INFO">${file_exists} = False</msg>
+<var>${file_exists}</var>
+<arg>File Should Exist</arg>
+<arg>${CSV_FILE}</arg>
+<doc>Runs the specified keyword and returns the status as a Boolean value.</doc>
+<status status="PASS" start="2026-06-04T16:42:32.528268" elapsed="0.006043"/>
+</kw>
+<if>
+<branch type="IF" condition="not ${file_exists}">
+<kw name="Log To Console" owner="BuiltIn">
+<arg>\n❌ ERROR: ไม่พบไฟล์ ${CSV_FILE}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2026-06-04T16:42:32.534991" elapsed="0.000422"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>================================</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2026-06-04T16:42:32.535538" elapsed="0.000294"/>
+</kw>
+<kw name="Fatal Error" owner="BuiltIn">
+<msg time="2026-06-04T16:42:32.536187" level="FAIL">Missing CSV file</msg>
+<arg>Missing CSV file</arg>
+<doc>Stops the whole test execution.</doc>
+<status status="FAIL" start="2026-06-04T16:42:32.535942" elapsed="0.003584">Missing CSV file</status>
+</kw>
+<status status="FAIL" start="2026-06-04T16:42:32.534688" elapsed="0.004983">Missing CSV file</status>
+</branch>
+<status status="FAIL" start="2026-06-04T16:42:32.534625" elapsed="0.005105">Missing CSV file</status>
+</if>
+<kw name="Read CSV File">
+<var>@{data}</var>
+<arg>${CSV_FILE}</arg>
+<status status="NOT RUN" start="2026-06-04T16:42:32.540237" elapsed="0.000754"/>
+</kw>
+<kw name="Get Length" owner="BuiltIn">
+<var>${row_count}</var>
+<arg>${data}</arg>
+<doc>Returns and logs the length of the given item as an integer.</doc>
+<status status="NOT RUN" start="2026-06-04T16:42:32.541679" elapsed="0.000101"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>\n📂 พบข้อมูล ${row_count} รายการในไฟล์ ${CSV_FILE}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="NOT RUN" start="2026-06-04T16:42:32.541967" elapsed="0.000094"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>================================</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="NOT RUN" start="2026-06-04T16:42:32.542204" elapsed="0.000076"/>
+</kw>
+<kw name="Create File">
+<arg>${OUTPUT_FILE}</arg>
+<arg>username,password,score,level,feedback\n</arg>
+<status status="NOT RUN" start="2026-06-04T16:42:32.542443" elapsed="0.000627"/>
+</kw>
+<for flavor="IN">
+<iter>
+<if>
+<branch type="IF" condition="$row == &quot;username&quot;">
+<continue>
+<status status="NOT RUN" start="2026-06-04T16:42:32.544044" elapsed="0.000033"/>
+</continue>
+<status status="NOT RUN" start="2026-06-04T16:42:32.543989" elapsed="0.000120"/>
+</branch>
+<status status="NOT RUN" start="2026-06-04T16:42:32.543974" elapsed="0.000163"/>
+</if>
+<kw name="Set Variable" owner="BuiltIn">
+<var>${username}</var>
+<arg>${row}[0]</arg>
+<doc>Returns the given values which can then be assigned to a variables.</doc>
+<status status="NOT RUN" start="2026-06-04T16:42:32.544195" elapsed="0.000047"/>
+</kw>
+<kw name="Set Variable" owner="BuiltIn">
+<var>${password}</var>
+<arg>${row}[1]</arg>
+<doc>Returns the given values which can then be assigned to a variables.</doc>
+<status status="NOT RUN" start="2026-06-04T16:42:32.544308" elapsed="0.000042"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>\n🔍 กำลังตรวจสอบ: ${username}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="NOT RUN" start="2026-06-04T16:42:32.544414" elapsed="0.000046"/>
+</kw>
+<kw name="Evaluate Password Strength">
+<arg>${password}</arg>
+<status status="NOT RUN" start="2026-06-04T16:42:32.544748" elapsed="0.000050"/>
+</kw>
+<kw name="Display Result For User">
+<arg>${username}</arg>
+<status status="NOT RUN" start="2026-06-04T16:42:32.544879" elapsed="0.000040"/>
+</kw>
+<kw name="Append To File">
+<arg>${OUTPUT_FILE}</arg>
+<arg>${username},${password},${RESULT.score},${RESULT.level},"${RESULT.feedback}"\n</arg>
+<status status="NOT RUN" start="2026-06-04T16:42:32.544987" elapsed="0.000550"/>
+</kw>
+<var name="${row}"/>
+<status status="NOT RUN" start="2026-06-04T16:42:32.543906" elapsed="0.002135"/>
+</iter>
+<var>${row}</var>
+<value>@{data}</value>
+<status status="NOT RUN" start="2026-06-04T16:42:32.543704" elapsed="0.002377"/>
+</for>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>\n================================</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="NOT RUN" start="2026-06-04T16:42:32.546264" elapsed="0.000071"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>✅ เสร็จสิ้น! ผลลัพธ์ถูกบันทึกใน ${OUTPUT_FILE}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="NOT RUN" start="2026-06-04T16:42:32.546635" elapsed="0.000120"/>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>================================</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="NOT RUN" start="2026-06-04T16:42:32.547004" elapsed="0.000114"/>
+</kw>
+<doc>อ่าน CSV และตรวจสอบรหัสผ่านทุกแถว</doc>
+<status status="FAIL" start="2026-06-04T16:42:32.521723" elapsed="0.025611">Missing CSV file</status>
+</test>
+<doc>ตรวจสอบความแข็งแรงของรหัสผ่านจากไฟล์ CSV
+วิธีใช้: robot password_checker_bulk.robot</doc>
+<status status="FAIL" start="2026-06-04T16:42:32.497300" elapsed="0.053976"/>
+</suite>
+<status status="FAIL" start="2026-06-04T16:42:32.467111" elapsed="0.087118"/>
+</suite>
+<statistics>
+<total>
+<stat pass="0" fail="1" skip="0">All Tasks</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Spc" id="s1" pass="0" fail="1" skip="0">Spc</stat>
+<stat name="Password Checker List" id="s1-s1" pass="0" fail="1" skip="0">Spc.Password Checker List</stat>
+</suite>
+</statistics>
+<errors>
+<msg time="2026-06-04T16:42:32.512553" level="ERROR">Error in file 'C:\spc\password_checker_list.robot' on line 6: Importing library 'CSVLibrary' failed: ModuleNotFoundError: No module named 'CSVLibrary'
+Traceback (most recent call last):
+  None
+PYTHONPATH:
+  C:\spc\lib
+  C:\spc\resources
+  c:\Users\COM-02-0419\.vscode\extensions\d-biehl.robotcode-2.5.1\bundled\libs
+  c:\Users\COM-02-0419\.vscode\extensions\d-biehl.robotcode-2.5.1\bundled\tool\robotcode
+  C:\Users\COM-02-0419\AppData\Local\Programs\Python\Python314\python314.zip
+  C:\Users\COM-02-0419\AppData\Local\Programs\Python\Python314\DLLs
+  C:\Users\COM-02-0419\AppData\Local\Programs\Python\Python314\Lib
+  C:\Users\COM-02-0419\AppData\Local\Programs\Python\Python314
+  C:\Users\COM-02-0419\AppData\Local\Programs\Python\Python314\Lib\site-packages</msg>
+</errors>
+</robot>
