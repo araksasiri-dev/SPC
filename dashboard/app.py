@@ -23,20 +23,31 @@ def get_db_stats():
     cursor.execute("SELECT COUNT(*) FROM users WHERE status = 'SUCCESS'")
     success = cursor.fetchone()[0]
     
-    cursor.execute("SELECT COUNT(*) FROM users WHERE status = 'FAIL'")
+    # ✅ แก้ไข: นับ FAIL ทั้งหมด
+    cursor.execute("SELECT COUNT(*) FROM users WHERE status LIKE 'FAILED%'")
     failed = cursor.fetchone()[0]
     
     cursor.execute("SELECT COUNT(*) FROM users WHERE status LIKE 'SKIPPED%'")
     skipped = cursor.fetchone()[0]
     
+    # ✅ ดึงจำนวน FAIL แยกประเภท
+    cursor.execute("SELECT COUNT(*) FROM users WHERE status = 'FAILED_EMAIL'")
+    failed_email = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM users WHERE status = 'FAILED_PHONE'")
+    failed_phone = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM users WHERE status = 'FAILED_BOTH'")
+    failed_both = cursor.fetchone()[0]
+    
     today = datetime.now().strftime('%Y-%m-%d')
     
-    # ✅ 1. ดึงสถิติรายวัน ย้อนหลัง 7 วัน (แสดงยอดรวม)
+    # ✅ 1. ดึงสถิติรายวัน ย้อนหลัง 7 วัน
     cursor.execute("""
         SELECT DATE(registered_at) as date, 
                COUNT(*) as total,
                SUM(CASE WHEN status = 'SUCCESS' THEN 1 ELSE 0 END) as success,
-               SUM(CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END) as failed
+               SUM(CASE WHEN status LIKE 'FAILED%' THEN 1 ELSE 0 END) as failed
         FROM users 
         WHERE DATE(registered_at) < ?
           AND registered_at >= DATE('now', '-7 days')
@@ -45,12 +56,13 @@ def get_db_stats():
     """, (today,))
     daily_stats = cursor.fetchall()
     
-    # ✅ 2. ดึงสถิติรายชั่วโมงของวันนี้
+    # ✅ 2. ดึงสถิติรายชั่วโมงของวันนี้ (แยกตามสถานะ)
     cursor.execute("""
         SELECT strftime('%H:00', registered_at) as hour,
                COUNT(*) as total,
                SUM(CASE WHEN status = 'SUCCESS' THEN 1 ELSE 0 END) as success,
-               SUM(CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END) as failed
+               SUM(CASE WHEN status LIKE 'FAILED%' THEN 1 ELSE 0 END) as failed,
+               SUM(CASE WHEN status LIKE 'SKIPPED%' THEN 1 ELSE 0 END) as skipped
         FROM users 
         WHERE DATE(registered_at) = ?
         GROUP BY strftime('%H:00', registered_at)
@@ -75,8 +87,13 @@ def get_db_stats():
             "failed": failed,
             "skipped": skipped
         },
-        "daily_stats": daily_stats,     # ข้อมูลรายวัน (ยอดรวม)
-        "hourly_stats": hourly_stats,   # ข้อมูลรายชั่วโมงของวันนี้
+        "failed_breakdown": {
+            "failed_email": failed_email,
+            "failed_phone": failed_phone,
+            "failed_both": failed_both
+        },
+        "daily_stats": daily_stats,
+        "hourly_stats": hourly_stats,
         "status_counts": status_counts,
         "recent_users": recent_users
     }

@@ -18,6 +18,9 @@ class DataProcessor:
         self.duplicate_email = []
         self.duplicate_phone = []
         self.duplicate_both = []
+        self.fail_email = []
+        self.fail_phone = []
+        self.fail_both = []
         
         # ✅ เปลี่ยนให้อ่านจาก C:\secrets\
         self.credentials_file = os.getenv("GMAIL_CREDENTIALS", r"C:\secrets\credentials.json")
@@ -90,51 +93,77 @@ class DataProcessor:
     
     # ========== Data Validation ==========
     def process_data(self):
-            if not self.raw_data:
-                self.read_excel()
+        if not self.raw_data:
+            self.read_excel()
+        
+        email_seen = {}
+        phone_seen = {}
+        self.clean_data = []
+        self.duplicate_email = []
+        self.duplicate_phone = []
+        self.duplicate_both = []
+        self.fail_email = []
+        self.fail_phone = []
+        self.fail_both = []
+        
+        for user in self.raw_data:
+            email = self._safe_str(user.get("email", "")).strip()
+            phone = self._safe_str(user.get("phone", "")).strip()
             
-            email_seen = {}
-            phone_seen = {}
-            self.clean_data = []
-            self.duplicate_email = []
-            self.duplicate_phone = []
-            self.duplicate_both = []
+            # ตรวจสอบกรณีข้อมูลว่าง
+            if not email or not phone:
+                continue
             
-            for user in self.raw_data:
-                email = self._safe_str(user.get("email", "")).strip()
-                phone = self._safe_str(user.get("phone", "")).strip()
-                
-                # ตรวจสอบกรณีข้อมูลว่าง
-                if not email or not phone:
-                    continue
-                
-                # 🟢 เปลี่ยนตรรกะ: เช็กสถานะแยกขาดจากกัน ไม่ตัดตอนด้วย continue มั่วซั่ว
+            # ✅ ตรวจสอบรูปแบบ Email
+            is_valid_email = self.validate_email(email)
+            # ✅ ตรวจสอบรูปแบบ Phone (ต้องเป็นตัวเลข 10 หลัก)
+            is_valid_phone = re.match(r'^08\d{8}$|^09\d{8}$', phone) is not None
+            
+            # ✅ ถ้า Email หรือ Phone ไม่ถูกต้อง → จัดเป็น Fail
+            if not is_valid_email and not is_valid_phone:
+                self.fail_both.append(user)
+            elif not is_valid_email:
+                self.fail_email.append(user)
+            elif not is_valid_phone:
+                self.fail_phone.append(user)
+            else:
+                # ✅ ตรวจสอบซ้ำ (เฉพาะข้อมูลที่ถูกต้อง)
                 is_email_dup = email in email_seen
                 is_phone_dup = phone in phone_seen
                 
                 if is_email_dup and is_phone_dup:
-                    self.duplicate_both.append(user)   # 🟢 ตกลงถังซ้ำคู่แล้ว จบกบวนการทันที ไม่ไหลลงข้างล่าง
+                    self.duplicate_both.append(user)
                 elif is_email_dup:
-                    self.duplicate_email.append(user)  # 🟢 ซ้ำแค่อีเมลอย่างเดียว
+                    self.duplicate_email.append(user)
                 elif is_phone_dup:
-                    self.duplicate_phone.append(user)  # 🟢 ซ้ำแค่เบอร์โทรอย่างเดียว
+                    self.duplicate_phone.append(user)
                 else:
-                    self.clean_data.append(user)       # 🟢 ข้อมูลใสสะอาด ผ่านฉลุย
-                            
-                # 🟢 บันทึกประวัติการพบเจอทันทีเพื่อใช้เช็กในแถวถัดไป
-                if email: email_seen[email] = True
-                if phone: phone_seen[phone] = True
-                
-                 
+                    self.clean_data.append(user)
             
-            print(f"✅ ตรวจสอบข้อมูลสำเร็จ: ผ่าน {len(self.clean_data)} รายการ, อีเมลซ้ำ {len(self.duplicate_email)} รายการ, เบอร์โทรซ้ำ {len(self.duplicate_phone)} รายการ, อีเมลและเบอร์โทรซช้ำ {len(self.duplicate_both)} รายการ")
-            
-            return {
-                "clean_data": self.clean_data,
-                "duplicate_email": self.duplicate_email,
-                "duplicate_phone": self.duplicate_phone,
-                "duplicate_both": self.duplicate_both,
-            }
+            # บันทึกประวัติการพบเจอ (เฉพาะข้อมูลที่ถูกต้องเท่านั้น)
+            if is_valid_email:
+                email_seen[email] = True
+            if is_valid_phone:
+                phone_seen[phone] = True
+        
+        print(f"✅ ตรวจสอบข้อมูลสำเร็จ:")
+        print(f"   ✅ ผ่าน: {len(self.clean_data)} ราย")
+        print(f"   ⚠️ อีเมลซ้ำ: {len(self.duplicate_email)} ราย")
+        print(f"   ⚠️ เบอร์โทรซ้ำ: {len(self.duplicate_phone)} ราย")
+        print(f"   ⚠️ ซ้ำทั้งคู่: {len(self.duplicate_both)} ราย")
+        print(f"   ❌ อีเมล Fail: {len(self.fail_email)} ราย")
+        print(f"   ❌ เบอร์โทร Fail: {len(self.fail_phone)} ราย")
+        print(f"   ❌ Fail ทั้งคู่: {len(self.fail_both)} ราย")
+        
+        return {
+            "clean_data": self.clean_data,
+            "duplicate_email": self.duplicate_email,
+            "duplicate_phone": self.duplicate_phone,
+            "duplicate_both": self.duplicate_both,
+            "fail_email": self.fail_email,
+            "fail_phone": self.fail_phone,
+            "fail_both": self.fail_both
+        }
             
     def get_clean_users(self):
         return self.clean_data
@@ -147,6 +176,15 @@ class DataProcessor:
     
     def get_duplicate_both_users(self):
         return self.duplicate_both
+        
+    def get_fail_email_users(self):
+        return self.fail_email
+    
+    def get_fail_phone_users(self):
+        return self.fail_phone
+    
+    def get_fail_both_users(self):
+        return self.fail_both
     
     def validate_email(self, email):
         email_str = self._safe_str(email)
@@ -194,7 +232,7 @@ class DataProcessor:
         
         return self.gmail
     
-    def send_email_report(self, recipient_email, summary, user_list, duplicate_report=""):
+    def send_email_report(self, recipient_email, summary, user_list, duplicate_report="", fail_report=""):
         """
         ส่งรายงานทางอีเมลด้วย Gmail OAuth
         
@@ -217,7 +255,7 @@ class DataProcessor:
         try:
             # ส่งไปยัง gmail_oauth.py
             result = self.gmail.send_registration_summary(
-                recipient_email, summary, user_list, duplicate_report
+                recipient_email, summary, user_list, duplicate_report, fail_report
             )
             return result
         except Exception as e:
@@ -266,11 +304,44 @@ class DataProcessor:
         report += "\n"  # บรรทัดว่างระหว่างส่วน
         
         if self.duplicate_both:
-            report += "📧📱 อีเมลซ้ำและเบอร์โทรซ้ำ ({} ราย):\n".format(len(self.duplicate_both))
+            report += "📧📱 อีเมลและเบอร์โทรซ้ำ ({} ราย):\n".format(len(self.duplicate_both))
             for idx, user in enumerate(self.duplicate_both, start=1):
                 report += "   {}. {} ({} / {})\n".format(idx, user.get('username'), user.get('email'), user.get('phone'))
         else:
             report += "✅ ไม่มีอีเมลซ้ำและไม่มีเบอร์โทรซ้ำ\n"
+        
+        return report
+    
+    def get_fail_report(self):
+        """
+        สร้างรายงานข้อมูลล้มเหลว พร้อมเลขลำดับและขึ้นบรรทัดใหม่
+        """
+        report = ""
+        
+        if self.fail_email:
+            report += "📧 อีเมลล้มเหลว ({} ราย):\n".format(len(self.fail_email))
+            for idx, user in enumerate(self.fail_email, start=1):
+                report += "   {}. {} ({})\n".format(idx, user.get('username'), user.get('email'))
+        else:
+            report += "✅ ไม่มีอีเมลล้มเหลว\n"
+        
+        report += "\n"  # บรรทัดว่างระหว่างส่วน
+        
+        if self.fail_phone:
+            report += "📱 เบอร์โทรล้มเหลว ({} ราย):\n".format(len(self.fail_phone))
+            for idx, user in enumerate(self.fail_phone, start=1):
+                report += "   {}. {} ({})\n".format(idx, user.get('username'), user.get('phone'))
+        else:
+            report += "✅ ไม่มีเบอร์โทรล้มเหลว\n"
+            
+        report += "\n"  # บรรทัดว่างระหว่างส่วน
+        
+        if self.fail_both:
+            report += "📧📱 อีเมลและเบอร์โทรล้มเหลว ({} ราย):\n".format(len(self.fail_both))
+            for idx, user in enumerate(self.fail_both, start=1):
+                report += "   {}. {} ({} / {})\n".format(idx, user.get('username'), user.get('email'), user.get('phone'))
+        else:
+            report += "✅ ไม่มีอีเมลล้มเหลวและไม่มีเบอร์โทรล้มเหลว\n"
         
         return report
     
@@ -280,6 +351,9 @@ class DataProcessor:
             "excel": {
                 "total": len(self.raw_data),
                 "clean": len(self.clean_data),
+                "fail_email": len(self.fail_email),
+                "fail_phone": len(self.fail_phone),
+                "fail_both": len(self.fail_both),
                 "duplicate_email": len(self.duplicate_email),
                 "duplicate_phone": len(self.duplicate_phone),
                 "duplicate_both": len(self.duplicate_both)
@@ -288,7 +362,7 @@ class DataProcessor:
         }
         
  
-    def save_all_results_to_db(self, db_results, dup_emails, dup_phones, dup_both):
+    def save_all_results_to_db(self, db_results, dup_emails, dup_phones, dup_both, fail_emails, fail_phones, fail_both):
         import sqlite3
         import os
         
@@ -360,11 +434,44 @@ class DataProcessor:
                 INSERT INTO users (username, email, phone, status) 
                 VALUES (?, ?, ?, ?)
             """, (username, email, phone, 'SKIPPED_DUP_BOTH'))
+            
+        # 5. บันทึกกลุ่มอีเมลล้มเหลว (บันทึกตรงๆ เพื่อเก็บประวัติ Audit Log)
+        for user in fail_emails:
+            username = user.get('username', '') if hasattr(user, 'get') else user['username']
+            email = user.get('email', '') if hasattr(user, 'get') else user['email']
+            phone = user.get('phone', '') if hasattr(user, 'get') else user['phone']
+            
+            local_cursor.execute("""
+                INSERT INTO users (username, email, phone, status) 
+                VALUES (?, ?, ?, ?)
+            """, (username, email, phone, 'FAILED_EMAIL'))
         
+        # 6. บันทึกกลุ่มเบอร์โทรล้มเหลว
+        for user in fail_phones:
+            username = user.get('username', '') if hasattr(user, 'get') else user['username']
+            email = user.get('email', '') if hasattr(user, 'get') else user['email']
+            phone = user.get('phone', '') if hasattr(user, 'get') else user['phone']
+            
+            local_cursor.execute("""
+                INSERT INTO users (username, email, phone, status) 
+                VALUES (?, ?, ?, ?)
+            """, (username, email, phone, 'FAILED_PHONE'))
+        
+        # 6. บันทึกกลุ่มอีเมลและเบอร์โทรล้มเหลว
+        for user in fail_both:
+            username = user.get('username', '') if hasattr(user, 'get') else user['username']
+            email = user.get('email', '') if hasattr(user, 'get') else user['email']
+            phone = user.get('phone', '') if hasattr(user, 'get') else user['phone']
+            
+            local_cursor.execute("""
+                INSERT INTO users (username, email, phone, status) 
+                VALUES (?, ?, ?, ?)
+            """, (username, email, phone, 'FAILED_BOTH'))
+            
         local_conn.commit()
         local_conn.close()
         
-        total_inserted = len(db_results) + len(dup_emails) + len(dup_phones)+ len(dup_both)
+        total_inserted = len(db_results) + len(dup_emails) + len(dup_phones) + len(dup_both) + len(fail_emails) + len(fail_phones) + len(fail_both)
         print(f"[SYSTEM-CHECK] 🟢 บันทึกข้อมูลแบบสะสมสำเร็จในรอบนี้: {total_inserted} แถว")
         return total_inserted
  
@@ -380,10 +487,13 @@ class DataProcessor:
         total_dup_email = len(self.duplicate_email)
         total_dup_phone = len(self.duplicate_phone)
         total_dup_both = len(self.duplicate_both)
+        total_fail_email = len(self.fail_email)
+        total_fail_phone = len(self.fail_phone)
+        total_fail_both = len(self.fail_both)
         total_all = len(self.raw_data)
         
         success = db_summary.get("success", 0)
-        failed = db_summary.get("failed", 0)
+        failed = total_fail_email + total_fail_phone+ total_fail_both
         skipped = total_dup_email + total_dup_phone+ total_dup_both
         
         # ตรวจสอบว่า total = success + failed + skipped หรือไม่
@@ -396,9 +506,12 @@ class DataProcessor:
         return {
             "total": total_all,
             "clean": total_clean,
-            "duplicate_email": total_dup_email,   # ✅ ส่งค่าอีเมลซ้ำ
-            "duplicate_phone": total_dup_phone,   # ✅ ส่งค่าเบอร์โทรซ้ำ
+            "duplicate_email": total_dup_email, 
+            "duplicate_phone": total_dup_phone, 
             "duplicate_both": total_dup_both,
+            "fail_email": total_fail_email, 
+            "fail_phone": total_fail_phone, 
+            "fail_both": total_fail_both,
             "success": success,
             "failed": failed,
             "skipped": skipped

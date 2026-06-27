@@ -131,6 +131,34 @@ def view_duplicates():
     
     print("="*90)
     conn.close()
+    
+def view_fail():
+    """แสดงเฉพาะข้อมูลที่ซ้ำ"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    print("\n" + "="*90)
+    print(f"⚠️ ข้อมูลที่ถูกข้าม (fail) ใน: {DB_NAME}")
+    print("="*90)
+    
+    cursor.execute("SELECT * FROM users WHERE status LIKE 'FAILED%'")
+    rows = cursor.fetchall()
+    
+    if not rows:
+        print("✅ ไม่มีข้อมูลที่ล้มเหลว")
+        conn.close()
+        return
+    
+    print(f"{'ID':<5} {'Username':<15} {'Email':<30} {'Phone':<15} {'Status':<25}")
+    print("-"*90)
+    
+    for row in rows:
+        print(f"{row[0]:<5} {row[1]:<15} {row[2]:<30} {row[3]:<15} {row[4]:<25}")
+    
+    print("="*90)
+    conn.close()    
+    
+
 
 def view_summary_by_status():
     """แสดงสรุปแยกตามสถานะ"""

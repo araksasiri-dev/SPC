@@ -120,14 +120,13 @@
         .status-badge.success { background: #d4edda; color: #155724; border: 1px solid #28a745; }
         .status-badge.failed { background: #f8d7da; color: #721c24; border: 1px solid #dc3545; }
         .status-badge.skipped { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        .status-badge.both { background: #f5c6cb; color: #721c24; border: 1px solid #dc3545; }
+        .status-badge.email { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        .status-badge.phone { background: #d1ecf1; color: #0c5460; border: 1px solid #17a2b8; }
+        .status-badge.failed_email { background: #fd7e14; color: white; border: 1px solid #fd7e14; }
+        .status-badge.failed_phone { background: #6f42c1; color: white; border: 1px solid #6f42c1; }
+        .status-badge.failed_both { background: #dc3545; color: white; border: 1px solid #dc3545; }
         .status-badge.unknown { background: #e2e3e5; color: #383d41; border: 1px solid #6c757d; }
-
-        /* ✅ เพิ่มสีสำหรับ DUP_BOTH */
-        .status-badge.both {
-            background: #f5c6cb;
-            color: #721c24;
-            border: 1px solid #dc3545;
-        }
 
         .refresh-time { color: #999; font-size: 13px; margin-top: 10px; text-align: right; }
 
@@ -244,7 +243,12 @@
             if (!status) return 'unknown';
             if (status.includes('SUCCESS')) return 'success';
             if (status.includes('SKIPPED_DUP_BOTH')) return 'both';
+            if (status.includes('SKIPPED_DUP_EMAIL')) return 'email';
+            if (status.includes('SKIPPED_DUP_PHONE')) return 'phone';
             if (status.includes('SKIPPED')) return 'skipped';
+            if (status.includes('FAILED_EMAIL')) return 'failed_email';
+            if (status.includes('FAILED_PHONE')) return 'failed_phone';
+            if (status.includes('FAILED_BOTH')) return 'failed_both';
             if (status.includes('FAIL')) return 'failed';
             return 'unknown';
         }
@@ -256,19 +260,20 @@
             if (status.includes('SKIPPED_DUP_EMAIL')) return '#ffc107';
             if (status.includes('SKIPPED_DUP_PHONE')) return '#17a2b8';
             if (status.includes('SKIPPED')) return '#ffc107';
+            if (status.includes('FAILED_EMAIL')) return '#fd7e14';
+            if (status.includes('FAILED_PHONE')) return '#6f42c1';
+            if (status.includes('FAILED_BOTH')) return '#dc3545';
             if (status.includes('FAIL')) return '#dc3545';
             return '#6c757d';
         }
 
         function updateDashboard(data) {
-            // Update stats
             document.getElementById('totalCount').textContent = data.summary.total || 0;
             document.getElementById('successCount').textContent = data.summary.success || 0;
             document.getElementById('failedCount').textContent = data.summary.failed || 0;
             document.getElementById('skippedCount').textContent = data.summary.skipped || 0;
             document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('th-TH');
 
-            // ✅ อัปเดตวันที่ในกราฟรายวัน
             const dailyRange = document.getElementById('dailyDateRange');
             if (data.daily_stats && data.daily_stats.length > 0) {
                 const firstDate = data.daily_stats[0][0];
@@ -278,14 +283,12 @@
                 dailyRange.textContent = '(ไม่มีข้อมูล)';
             }
 
-            // ✅ อัปเดตวันที่ในกราฟรายชั่วโมง
             const today = new Date();
             const todayStr = today.toLocaleDateString('th-TH', { 
                 year: 'numeric', month: '2-digit', day: '2-digit' 
             });
             document.getElementById('hourlyDateRange').textContent = `(${todayStr})`;
 
-            // Update daily chart
             if (dailyChart && data.daily_stats && data.daily_stats.length > 0) {
                 const labels = data.daily_stats.map(d => d[0]);
                 const success = data.daily_stats.map(d => d[2] || 0);
@@ -299,12 +302,17 @@
                 document.getElementById('dailyChart').style.display = 'none';
             }
 
-            // Update hourly chart
+            // ✅ Stacked Bar Chart
             if (hourlyChart && data.hourly_stats && data.hourly_stats.length > 0) {
                 const labels = data.hourly_stats.map(d => d[0]);
                 const success = data.hourly_stats.map(d => d[2] || 0);
+                const failed = data.hourly_stats.map(d => d[3] || 0);
+                const skipped = data.hourly_stats.map(d => d[4] || 0);
+                
                 hourlyChart.data.labels = labels;
                 hourlyChart.data.datasets[0].data = success;
+                hourlyChart.data.datasets[1].data = failed;
+                hourlyChart.data.datasets[2].data = skipped;
                 hourlyChart.update();
                 document.getElementById('hourlyEmpty').style.display = 'none';
                 document.getElementById('hourlyChart').style.display = 'block';
@@ -313,7 +321,6 @@
                 document.getElementById('hourlyChart').style.display = 'none';
             }
 
-            // ✅ Update status chart (รองรับ DUP_BOTH)
             if (statusChart && data.status_counts && data.status_counts.length > 0) {
                 const labels = data.status_counts.map(d => d[0]);
                 const values = data.status_counts.map(d => d[1]);
@@ -324,7 +331,6 @@
                 statusChart.update();
             }
 
-            // Update recent users
             const tbody = document.getElementById('recentUsers');
             if (data.recent_users && data.recent_users.length > 0) {
                 tbody.innerHTML = data.recent_users.map((user, i) => {
@@ -363,7 +369,6 @@
         }
 
         function initCharts() {
-            // Daily Chart
             const ctxDaily = document.getElementById('dailyChart').getContext('2d');
             dailyChart = new Chart(ctxDaily, {
                 type: 'bar',
@@ -390,34 +395,60 @@
                 }
             });
 
-            // Hourly Chart
+            // ✅ Stacked Bar Chart (แก้ไขแล้ว)
             const ctxHourly = document.getElementById('hourlyChart').getContext('2d');
             hourlyChart = new Chart(ctxHourly, {
                 type: 'bar',
                 data: {
                     labels: [],
-                    datasets: [{
-                        label: '✅ สำเร็จ (วันนี้)',
-                        data: [],
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                        borderColor: '#36a2eb',
-                        borderWidth: 1
-                    }]
+                    datasets: [
+                        {
+                            label: '✅ สำเร็จ',
+                            data: [],
+                            backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                            borderColor: '#28a745',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '❌ ล้มเหลว',
+                            data: [],
+                            backgroundColor: 'rgba(220, 53, 69, 0.8)',
+                            borderColor: '#dc3545',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '⏭️ ข้าม (ซ้ำ)',
+                            data: [],
+                            backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                            borderColor: '#ffc107',
+                            borderWidth: 1
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
                     plugins: {
-                        legend: { position: 'top', labels: { font: { size: 11 } } }
+                        legend: { 
+                            position: 'top', 
+                            labels: { font: { size: 11 } } 
+                        }
                     },
                     scales: {
-                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                        x: { title: { display: true, text: 'เวลา (ชั่วโมง)', font: { size: 12 } } }
+                        x: {
+                            stacked: true,  // ✅ จำเป็น!
+                            title: { display: true, text: 'เวลา (ชั่วโมง)', font: { size: 12 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            stacked: true,  // ✅ จำเป็น!
+                            ticks: { stepSize: 1 },
+                            title: { display: true, text: 'จำนวน', font: { size: 12 } }
+                        }
                     }
                 }
             });
 
-            // ✅ Status Chart (Doughnut) - เพิ่มสีสำหรับ DUP_BOTH
             const ctxStatus = document.getElementById('statusChart').getContext('2d');
             statusChart = new Chart(ctxStatus, {
                 type: 'doughnut',
@@ -425,7 +456,7 @@
                     labels: [],
                     datasets: [{
                         data: [],
-                        backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#dc3545', '#6c757d']
+                        backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#dc3545', '#fd7e14', '#6f42c1', '#6c757d']
                     }]
                 },
                 options: {
