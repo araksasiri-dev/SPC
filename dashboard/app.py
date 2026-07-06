@@ -47,7 +47,8 @@ def get_db_stats():
         SELECT DATE(registered_at) as date, 
                COUNT(*) as total,
                SUM(CASE WHEN status = 'SUCCESS' THEN 1 ELSE 0 END) as success,
-               SUM(CASE WHEN status LIKE 'FAILED%' THEN 1 ELSE 0 END) as failed
+               SUM(CASE WHEN status LIKE 'FAILED%' THEN 1 ELSE 0 END) as failed,
+               SUM(CASE WHEN status LIKE 'SKIPPED%' THEN 1 ELSE 0 END) as skipped
         FROM users 
         WHERE DATE(registered_at) < ?
           AND registered_at >= DATE('now', '-7 days')

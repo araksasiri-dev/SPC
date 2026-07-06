@@ -90,9 +90,9 @@ def generate_users_with_duplicates(count=90, duplicate_count=10, fail_count=5):
 if __name__ == "__main__":
     
     # ========== ตั้งค่าตรงนี้! ==========
-    NORMAL_COUNT = 500      # จำนวนข้อมูลปกติ
-    DUPLICATE_COUNT = 40   # จำนวนข้อมูลซ้ำ
-    FAIL_COUNT = 30 # จำนวนข้อมูลล้มเหลว
+    NORMAL_COUNT = 100      # จำนวนข้อมูลปกติ
+    DUPLICATE_COUNT = 10   # จำนวนข้อมูลซ้ำ
+    FAIL_COUNT = 10 # จำนวนข้อมูลล้มเหลว
     # ===================================
     users = generate_users_with_duplicates(NORMAL_COUNT, DUPLICATE_COUNT, FAIL_COUNT)
       
@@ -105,5 +105,5 @@ if __name__ == "__main__":
         ws.append([u["username"], u["email"], u["phone"]])
     wb.save("users_dup.xlsx")
     
-    print(f"✅ สร้างข้อมูล {len(users)} รายการ (รวมข้อมูลซ้ำ {DUPLICATE_COUNT} ราย) รวมข้อมูลล้มเหลว {FAIL_COUNT} ราย)")
+    print(f"✅ สร้างข้อมูล {len(users)} รายการ (รวมข้อมูลซ้ำ {DUPLICATE_COUNT} ราย , รวมข้อมูลล้มเหลว {FAIL_COUNT} ราย)")
     print("📁 บันทึกใน users_dup.xlsx")
